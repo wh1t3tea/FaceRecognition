@@ -1,5 +1,14 @@
 import numpy as np
 import cv2
+from torch import nn
+import torch
+import insightface
+from insightface.app import FaceAnalysis
+from insightface.data import get_image as ins_get_image
+from torchvision import transforms as T
+import PIL
+from PIL import Image
+from face_align import norm_crop
 
 
 def align_face(image, bbox: list | np.ndarray, landmarks: list | np.ndarray,
@@ -84,25 +93,20 @@ def pred_face_pose(bbox_, landmarks_, prob_):
     pred_label_list = []
 
     for bbox, landmarks, prob in zip(bbox_, landmarks_, prob_):
-        if bbox is not None:  # To check if we detect a face in the image
-            if prob > 0.9:  # To check if the detected face has probability more than 90%, to avoid
-                ang_r = np_angle(landmarks[0], landmarks[1], landmarks[2])  # Calculate the right eye angle
-                ang_l = np_angle(landmarks[1], landmarks[0], landmarks[2])  # Calculate the left eye angle
-                angle_r_list.append(ang_r)
-                angle_l_list.append(ang_l)
-                if (int(ang_r) in range(30, 66)) and (int(ang_l) in range(30, 66)):
-                    pred_label = 'Frontal'
-                    pred_label_list.append(pred_label)
-                else:
-                    if ang_r < ang_l:
-                        pred_label = 'Left Profile'
-                    else:
-                        pred_label = 'Right Profile'
-                    pred_label_list.append(pred_label)
+        if bbox is not None:
+            ang_r = np_angle(landmarks[0], landmarks[1], landmarks[2])
+            ang_l = np_angle(landmarks[1], landmarks[0], landmarks[2])
+            angle_r_list.append(ang_r)
+            angle_l_list.append(ang_l)
+            if (int(ang_r) in range(30, 66)) and (int(ang_l) in range(30, 66)):
+                pred_label = 'Frontal'
+                pred_label_list.append(pred_label)
             else:
-                pred_label_list.append(None)
-                angle_r_list.append(None)
-                angle_l_list.append(None)
+                if ang_r < ang_l:
+                    pred_label = 'Left Profile'
+                else:
+                    pred_label = 'Right Profile'
+                pred_label_list.append(pred_label)
         else:
             pred_label_list.append(None)
             angle_r_list.append(None)
@@ -115,7 +119,7 @@ def pred_face_pose(bbox_, landmarks_, prob_):
     return face_d
 
 
-class FaceExtractor(nn.Module):
+class MTCNNFaceExtractor(nn.Module):
     """
         FaceExtractor class extracts faces from images using a given face detector model.
 
@@ -126,7 +130,7 @@ class FaceExtractor(nn.Module):
     """
 
     def __init__(self, detector, device='cpu', img_size=(160, 160)):
-        super(FaceExtractor, self).__init__()
+        super(MTCNNFaceExtractor, self).__init__()
         self.model = detector
         self.model.device = device
         self.img_size = img_size
@@ -177,3 +181,33 @@ class FaceExtractor(nn.Module):
             else:
                 aligned_faces.append(None)
         return np.array(aligned_faces, dtype='object')
+
+
+class RetinaFaceExtractor:
+    def __init__(self,
+                 image_size,
+                 det_size=(640, 640)):
+        self.detector = FaceAnalysis(providers=['CUDAExecutionProvider', 'CPUExecutionProvider'])
+        self.detector.prepare(ctx_id=0, det_size=det_size)
+        self.image_size = image_size
+
+    def align(self, image, to_rgb):
+        if isinstance(image, str):
+            img = cv2.imread(image)
+        if isinstance(image, torch.Tensor):
+            img = image.to('cpu').detach()
+            img = img.numpy()
+            img = cv2.cvtColor(img,
+                               cv2.COLOR_RGB2BGR)
+        else:
+            img = cv2.cvtColor(np.array(image),
+                               cv2.COLOR_RGB2BGR)
+        if to_rgb:
+            img = img[:, :, ::-1]
+        faces_d = self.detector.get(img)
+        highest_prob_face = faces_d[0]
+        landmarks = highest_prob_face['kps']
+        aligned_img = norm_crop(img,
+                                landmarks,
+                                image_size=self.image_size)
+        return aligned_img
