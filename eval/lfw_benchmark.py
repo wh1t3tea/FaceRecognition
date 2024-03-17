@@ -1,4 +1,4 @@
-from utils.data import EvalDataset
+from ..utils.dataset import EvalDataset
 import torch
 import torch.nn.functional as F
 from id_rate import IdRate
@@ -8,46 +8,49 @@ from torch.nn.functional import cosine_similarity
 
 
 class Evaluate:
-    def __init__(self, data_path, pairs_path, root_dir, size=3):
+    def __init__(self,
+                 pairs_data_path,
+                 pairs_annot_path,
+                 root_dir,
+                 annot_path,
+                 distractor_path,
+                 query_path):
         """
-        data_path: {str} path to the image folder.
-        pairs_path: {str} path to the pairs list.
-        size: {int} number related to set size:
-                        {
-                        0: 25% dataset size
-                        1: 50% dataset size
-                        2: 75% dataset size
-                        3: 100% dataset size
-                        None: equals to 3 (100% size)
-                        }
+        pairs_data_path: {str} path to the image folder.
+        pairs_annot_path: {str} path to the pairs list.
         """
-        self.root_dir = root_dir
-        self.data_path = data_path
-        self.pairs_path = pairs_path
-        self.device = 'cuda' if torch.cuda.is_available() else 'cpu'
-        available_sizes = [0, 1, 2, 3]
-        assert size not in available_sizes
-        self.size = size
-        self.dataset = self.get_dataset(self.data_path,
-                                        self.pairs_path,
-                                        self.size)
-        self.dataloader = self.get_dataloader(self.dataset)
+        self.id_rate_cfg = [annot_path,
+                            distractor_path,
+                            query_path]
+        self.pairs_cfg = {'labels': pairs_annot_path,
+                          'data': pairs_data_path,
+                          'root': root_dir}
 
-    def get_dataset(self, data_path, pairs_path, size):
-        pairs = pd.read_csv(pairs_path, sep=' ', names=['First_image', 'Second_image', 'Issame'])
-        data = EvalDataset(data_path, pairs, self.root_dir)
+        self.device = 'cuda' if torch.cuda.is_available() else 'cpu'
+
+        self.dataset = self.get_dataset()
+        self.dataloader = DataLoader(self.dataset,
+                                     batch_size=32,
+                                     pin_memory=True,
+                                     num_workers=0,
+                                     drop_last=True)
+
+    def get_dataset(self):
+        pairs = pd.read_csv(self.pairs_cfg['labels'], sep=' ', names=['First_image', 'Second_image', 'Issame'])
+        data = EvalDataset(self.pairs_cfg['data'], pairs, self.pairs_cfg['root'])
         return data
 
-    def get_dataloader(self, data, batch_size=32):
-        dataloader = DataLoader(data, batch_size=batch_size, pin_memory=True, num_workers=0, drop_last=True)
-        return dataloader
-
-    def compute_threshold(self, model, fpr=0.25):
-        id_rate = IdRate()
+    def compute_threshold(self,
+                          model,
+                          fpr=0.20):
+        id_rate = IdRate(*self.id_rate_cfg)
         metric, threshold = id_rate.id_rate(model, fpr)
         return threshold
 
-    def accuracy(self, model, size, metrics, fpr) -> tuple[dict, float]:
+    def accuracy(self,
+                 model,
+                 metrics,
+                 fpr) -> tuple[dict, float]:
 
         """
         threshold: {float} computed with TPR@FPR=0.05 metric.
@@ -81,7 +84,7 @@ class Evaluate:
             if metric not in results.keys():
                 results[metric] = 0
             if metric == 'accuracy':
-                results['accuracy'] = batch_res['tp'] / len(self.dataloader)
+                results['accuracy'] = (batch_res['tp'] + batch_res['fp']) / len(self.dataset)
             if metric == 'precision':
                 if (batch_res['tp'] + batch_res['fp']) == 0:
                     results['precision'] = 0
