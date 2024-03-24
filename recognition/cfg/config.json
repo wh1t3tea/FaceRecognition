@@ -1,0 +1,54 @@
+{
+  "data_path":  "",
+  "callbacks":
+  {
+    "earlystop": {
+      "on": "accuracy",
+      "patience": 7,
+      "verbose": "False",
+      "chkpt_path": "earlystop_checkpoint.pt"
+    },
+    "save_weights": {
+      "backbone": "True",
+      "arcface": "True",
+      "optimizer": "False",
+      "save_every": 10
+    }
+  },
+  "logging": {
+    "pause": 0,
+    "show_lr": "True"
+  },
+  "device": "cuda:0",
+  "verbose": 1,
+  "epochs": 35,
+  "backbone": "ghostfacenetv2",
+  "embedding_size": 512,
+  "pretrained": "False",
+  "optimizer": {
+    "sgd": {
+      "lr": 0.1,
+      "weight_decay": 5e-04,
+      "momentum": 0.9
+    },
+    "sgd_scheduler": {
+      "reduce_epochs": [5, 9, 13, 18, 23, 28, 32],
+      "gamma": 0.5
+    }
+  },
+  "loss": {
+    "arcface": {
+      "scale": 32,
+      "num_classes": 10572
+    }
+  },
+  "batch_size": 256,
+  "valid": "False",
+  "metric": {
+    "lfw-pair accuracy": {
+      "pairs_dir": "",
+      "tar@far_data_dir": "",
+      "fpr": 0.015
+    }
+  }
+}
