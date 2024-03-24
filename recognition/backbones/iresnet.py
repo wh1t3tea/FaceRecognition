@@ -177,3 +177,21 @@ def iresnet34(pretrained=False, progress=True, **kwargs):
 def iresnet50(pretrained=False, progress=True, **kwargs):
     return _iresnet('iresnet50', IBasicBlock, [3, 4, 14, 3], pretrained,
                     progress, **kwargs)
+
+
+def get_iresnet(model_name):
+    model_name = model_name.model_name
+    if model_name in __all__:
+        model = eval(model_name)
+    else:
+        raise Exception(f"Unknown backbone.\nAvailable backbones: {__all__}")
+    return model
+
+
+if __name__ == "__main__":
+    import argparse
+
+    parser = argparse.ArgumentParser(description="model")
+    parser.add_argument("model_name",
+                        type=str)
+    print(get_iresnet(parser.parse_args()))
