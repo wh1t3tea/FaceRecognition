@@ -1,7 +1,7 @@
-from ..utils.dataset import EvalDataset
+from .eval_dataset import EvalDataset
 import torch
 import torch.nn.functional as F
-from id_rate import IdRate
+from .id_rate import IdRate
 from torch.utils.data import Dataset, DataLoader
 import pandas as pd
 from torch.nn.functional import cosine_similarity
@@ -48,10 +48,9 @@ class Evaluate:
         return data
 
     def compute_threshold(self,
-                          model,
-                          fpr=self.fpr):
+                          model):
         id_rate = IdRate(*self.id_rate_cfg)
-        metric, threshold = id_rate.id_rate(model, fpr)
+        metric, threshold = id_rate.id_rate(model, self.fpr)
         return threshold
 
     def accuracy(self,
@@ -65,7 +64,7 @@ class Evaluate:
         metric: {str} any of {"accuracy", "f1-score", "precision", "recall"}
         fpr: {float} acceptable error miss verification rate.
         """
-        threshold = 1 - self.compute_threshold(model, fpr)
+        threshold = 1 - self.compute_threshold(model)
         batch_res = {'tp': 0,
                      'tn': 0,
                      'fp': 0,
