@@ -15,4 +15,4 @@ if __name__ == "__main__":
                         type=str,
                         default='recognition/cfg/config.json',
                         help='path to your config')
-    load_cfg(parser.parse_args())
+    print(load_cfg(parser.parse_args()))
