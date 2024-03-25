@@ -124,7 +124,7 @@ def train(arg):
 if __name__ == "__main__":
     torch.backends.cudnn.benchmark = True
     parser = argparse.ArgumentParser(
-        description="Distributed Arcface Training in Pytorch")
+        description="Arcface Training")
     parser.add_argument("config",
                         type=str,
                         help="path to your .json cfg file")
