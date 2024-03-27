@@ -19,7 +19,7 @@ class Evaluate:
         self.fpr = fpr
 
         pairs_annot_path = osp.join(pairs_dir, "lfw_pair.txt")
-        parirs_data_path = osp.join(pairs_dir, "lfw")
+        pairs_data_path = osp.join(pairs_dir, "lfw")
 
         tar_far_annot = osp.join(tar_far_dir, "query_anno.txt")
         tar_far_query = osp.join(tar_far_dir, "celeba_aligned")
@@ -65,6 +65,7 @@ class Evaluate:
         fpr: {float} acceptable error miss verification rate.
         """
         threshold = 1 - self.compute_threshold(model)
+        print(threshold)
         batch_res = {'tp': 0,
                      'tn': 0,
                      'fp': 0,
@@ -90,7 +91,7 @@ class Evaluate:
             if metric not in results.keys():
                 results[metric] = 0
             if metric == 'accuracy':
-                results['accuracy'] = (batch_res['tp'] + batch_res['fp']) / len(self.dataset)
+                results['accuracy'] = (batch_res['tp'] + batch_res['tn']) / (batch_res['tp'] + batch_res['fp'] + batch_res['fn'] + batch_res['tn'])
             if metric == 'precision':
                 if (batch_res['tp'] + batch_res['fp']) == 0:
                     results['precision'] = 0

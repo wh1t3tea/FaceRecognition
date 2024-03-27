@@ -1,5 +1,5 @@
 import torch
-from torchvision import transforms as tfs
+from torchvision import transforms as T
 from torch.nn.functional import cosine_similarity, normalize
 import os
 from collections import defaultdict
@@ -9,10 +9,10 @@ import torch.nn.functional as F
 
 def preprocess_image(img_path):
     img = Image.open(img_path)
-    transform = tfs.Compose([
-        tfs.ToTensor(),
-        tfs.Resize((112, 112)),
-        tfs.Normalize(mean=[0.5, 0.5, 0.5], std=[0.5, 0.5, 0.5])
+    transform = T.Compose([
+        T.ToTensor(),
+        T.Resize((112, 112)),
+        T.Normalize(mean=[0.5, 0.5, 0.5], std=[0.5, 0.5, 0.5])
     ])
     img = transform(img)
     return img
@@ -219,4 +219,5 @@ class IdRate:
         cos_query_neg = self.compute_cosine_query_neg(self.query_dict(),
                                                       q_embeddings)
         cos_query_distractors = self.compute_cosine_query_distractors(q_embeddings, d_embeddings)
+        print(compute_ir(cos_query_pos, cos_query_neg, cos_query_distractors, fpr=[0.01, 0.05, 0.1]))
         return compute_ir(cos_query_pos, cos_query_neg, cos_query_distractors, fpr=fpr)

@@ -1,5 +1,5 @@
 import torch
-import logging
+import logger
 import argparse
 from dataset import get_dataloader
 from eval.lfw_benchmark import Evaluate
@@ -10,21 +10,18 @@ from torch.optim import lr_scheduler
 from ellzaf_ml.models import GhostFaceNetsV2
 from cfg.cfg import load_cfg
 from callbacks import EarlyStop
+import numpy as np
+from logger import setup_train_logging
 
 
 def train(arg):
-    logger = logging.getLogger(__name__)
-    logger.setLevel(logging.INFO)
-
-    handler = logging.FileHandler(f"train_logs.log", mode='w')
-    formatter = logging.Formatter("%(name)s %(asctime)s %(levelname)s %(message)s")
-
-    handler.setFormatter(formatter)
-    logger.addHandler(handler)
-
     cfg = load_cfg(arg)
 
+    log_path = cfg["logging"]["path"]
+    logger = setup_train_logging(log_path)
+
     device = cfg["device"]
+
     test_metrics = cfg['metric']["lfw-pair accuracy"]
 
     epochs = cfg["epochs"]
@@ -32,11 +29,12 @@ def train(arg):
     train_loader = get_dataloader(root_dir=cfg["data_path"],
                                   batch_size=cfg["batch_size"],
                                   )
-    metric = Evaluate(test_metrics["pair_dir"],
+    metric = Evaluate(test_metrics["pairs_dir"],
                       test_metrics["tar@far_data_dir"],
                       test_metrics["fpr"])
-    if cfg["loss"] == "arcface":
-        loss = ArcFaceLoss(cfg["num_classes"],
+
+    if cfg["loss"].get("arcface", False):
+        loss = ArcFaceLoss(cfg["loss"]["arcface"]["num_classes"],
                            cfg["embedding_size"],
                            scale=cfg["loss"]["arcface"]["scale"]).to(device)
     else:
@@ -46,43 +44,55 @@ def train(arg):
         backbone = get_iresnet(cfg["backbone"]).to(device)
     elif cfg["backbone"] == "ghostfacenetv2":
         backbone = GhostFaceNetsV2(image_size=112,
-                                   num_classes=None).to(device)
+                                   num_classes=None, dropout=0.).to(device)
     else:
         raise Exception(f"Unknown backbone: {cfg['backbone']}")
 
-    if cfg["optimizer"] == "sgd":
+    if cfg["optimizer"].get("sgd", False):
         optim_cfg = cfg["optimizer"]["sgd"]
-        optimizer = optim.SGD(params=[{"params": backbone.parameters()},
-                                      {"params": loss.parameters()}],
-                              lr=optim_cfg["lr"],
-                              momentum=optim_cfg["momentum"],
-                              weight_decay=optim_cfg["weight_decay"])
+        optimizer = optim.SGD([
+            {'params': backbone.parameters()},
+            {'params': loss.parameters(), "weight_deacy": 0.}],
+            lr=optim_cfg["lr"],
+            momentum=optim_cfg["momentum"],
+            weight_decay=optim_cfg["weight_decay"])
+
+        scheduler_cfg = cfg["optimizer"]["sgd"]["scheduler"]
+        scheduler = lr_scheduler.MultiStepLR(optimizer,
+                                             scheduler_cfg["reduce_epochs"],
+                                             scheduler_cfg["gamma"])
     else:
         raise Exception("Train with other optimizers not implemented yeat")
 
-    scheduler_cfg = cfg["optimizer"]["sgd_scheduler"]
-    scheduler = lr_scheduler.MultiStepLR(optimizer,
-                                         scheduler_cfg["reduce_epochs"],
-                                         scheduler_cfg["gamma"])
-    logger.info(f"Start training with current configuration: {cfg}")
+    logger.info(f"Start training with current configuration")
 
     iter_counter = 0
 
     show_lr = False
-    if cfg["logging"]["lr"]:
+    if cfg["logging"]["show_lr"]:
         show_lr = True
 
-    if cfg["callbacks"].get("earlystop", False) == "earlystop":
-        earlystop_cfg = cfg["callbacks"]["earlystop"]
-        earlystop = EarlyStop(path=earlystop_cfg["chkpt_path"], patience=earlystop_cfg["patience"])
+    if cfg["callbacks"].get("earlystop", False):
+        early_stop_cfg = cfg["callbacks"]["earlystop"]
+        early_stop = EarlyStop(path=early_stop_cfg["chkpt_path"],
+                               patience=early_stop_cfg["patience"],
+                               model=backbone,
+                               arcface=loss,
+                               optim=optimizer,
+                               log_path=log_path)
+    else:
+        early_stop = False
 
     accuracy = None
+    end_training = False
 
     for epoch in range(epochs):
 
-        model.train()
-        epoch_train_loss = 0
+        if end_training:
+            break
 
+        backbone.train()
+        epoch_train_loss = 0
 
         for images, labels in train_loader:
             iter_counter += 1
@@ -102,23 +112,22 @@ def train(arg):
         scheduler.step()
 
         with torch.inference_mode():
-            model.eval()
-            epoch_train_loss = torch.round(epoch_train_loss / len(train_loader), decimals=5)
+            backbone.eval()
+            epoch_train_loss = np.round(epoch_train_loss.cpu() / len(train_loader), decimals=5)
 
-            accuracy = metric.accuracy(model=backbone,
-                                       metrics=["accuracy"])["accuracy"]
-            accuracy = torch.round(accuracy, 4)
-
-            earlystop(accuracy)
+            accuracy, thresh = metric.accuracy(model=backbone,
+                                               metrics=["accuracy"],
+                                               fpr=test_metrics["fpr"])
+            accuracy = np.round(accuracy["accuracy"], 4)
 
             logger.info(f"Epoch {epoch} / {epochs} results: train_loss: {epoch_train_loss} \
-            | {f'| current LR: {scheduler.get_last_lr()}' if show_lr else 0} | lfw-accuracy: {accuracy}")
+            | {f'| current LR: {scheduler.get_last_lr()}' if show_lr else 0} | lfw-accuracy: {accuracy} | threshold: {np.round(thresh, 5)}")
 
-            if earlystop.early_stop:
-                break
+            if early_stop:
+                early_stop(accuracy, epoch)
+                end_training = early_stop.early_stopping
 
     logger.info(f"Training ends on Epoch: {epoch}/{epochs}.")
-
 
 
 if __name__ == "__main__":
@@ -127,5 +136,5 @@ if __name__ == "__main__":
         description="Arcface Training")
     parser.add_argument("config",
                         type=str,
-                        help="path to your .json cfg file")
+                        help="path to your .json cfg")
     train(parser.parse_args())

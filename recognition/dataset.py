@@ -11,7 +11,7 @@ def get_dataloader(root_dir,
                    shuffle=True):
     transforms = T.Compose([
         T.ToTensor(),
-        T.Resize((112, 112)),
+        T.RandomHorizontalFlip(),
         T.Normalize([0.5, 0.5, 0.5], [0.5, 0.5, 0.5])])
     dataset = ImageFolder(root_dir, transform=transforms)
     data_loader = DataLoader(dataset,

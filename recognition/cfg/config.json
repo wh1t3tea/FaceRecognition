@@ -1,39 +1,60 @@
 {
-  "data_path":  "",
-  "callbacks":
-  {
+  "data_path": "F:\\casia-webface",
+  "callbacks": {
     "earlystop": {
       "on": "accuracy",
       "patience": 7,
-      "verbose": "False",
-      "chkpt_path": "earlystop_checkpoint.pt"
+      "verbose": false,
+      "chkpt_path": "D:/PycharmProjects/FaceRecAPI/face-recognition/recognition/checkpoints"
     },
     "save_weights": {
-      "backbone": "True",
-      "arcface": "True",
-      "optimizer": "False",
+      "backbone": true,
+      "arcface": true,
+      "optimizer": false,
       "save_every": 10
     }
   },
   "logging": {
+    "path": "D:\\PycharmProjects\\FaceRecAPI\\face-recognition\\train_logs\\train.log",
     "pause": 0,
-    "show_lr": "True"
+    "show_lr": true
   },
   "device": "cuda:0",
   "verbose": 1,
   "epochs": 35,
   "backbone": "ghostfacenetv2",
   "embedding_size": 512,
-  "pretrained": "False",
+  "pretrained": false,
   "optimizer": {
     "sgd": {
       "lr": 0.1,
       "weight_decay": 5e-04,
-      "momentum": 0.9
+      "momentum": 0.9,
+      "scheduler": {
+        "reduce_epochs": [
+          4,
+          8,
+          10,
+          13,
+          15,
+          18,
+          21
+        ],
+        "gamma": 0.5
+      }
     },
-    "sgd_scheduler": {
-      "reduce_epochs": [5, 9, 13, 18, 23, 28, 32],
-      "gamma": 0.5
+    "adam": {
+      "lr": 0.001,
+      "weight_decay": 5e-04,
+      "eps": 1e-8,
+      "betas": [
+        0.9,
+        0.999
+      ],
+      "scheduler": {
+        "step": 5,
+        "gamma": 0.5
+      }
     }
   },
   "loss": {
@@ -42,12 +63,12 @@
       "num_classes": 10572
     }
   },
-  "batch_size": 256,
-  "valid": "False",
+  "batch_size": 128,
+  "valid": false,
   "metric": {
     "lfw-pair accuracy": {
-      "pairs_dir": "",
-      "tar@far_data_dir": "",
+      "pairs_dir": "F:\\lfw-pairs\\lfw",
+      "tar@far_data_dir": "F:\\celeba_ir",
       "fpr": 0.015
     }
   }
