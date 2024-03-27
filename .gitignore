@@ -1,0 +1,4 @@
+*.log
+**/test.py
+__pycache__/
+recognition/checkpoints
