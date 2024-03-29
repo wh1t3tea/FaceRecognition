@@ -12,6 +12,7 @@ from cfg.cfg import load_cfg
 from callbacks import EarlyStop
 import numpy as np
 from logger import setup_train_logging
+from optimizer import get_optimizer
 
 
 def train(arg):
@@ -34,11 +35,12 @@ def train(arg):
                       test_metrics["fpr"])
 
     if cfg["loss"].get("arcface", False):
+        loss_name = "arcface"
         loss = ArcFaceLoss(cfg["loss"]["arcface"]["num_classes"],
                            cfg["embedding_size"],
                            scale=cfg["loss"]["arcface"]["scale"]).to(device)
     else:
-        raise
+        raise Exception(f"Unexpected loss: {cfg['loss']}")
 
     if cfg["backbone"][:7] == "iresnet":
         backbone = get_iresnet(cfg["backbone"]).to(device)
@@ -48,21 +50,10 @@ def train(arg):
     else:
         raise Exception(f"Unknown backbone: {cfg['backbone']}")
 
-    if cfg["optimizer"].get("sgd", False):
-        optim_cfg = cfg["optimizer"]["sgd"]
-        optimizer = optim.SGD([
-            {'params': backbone.parameters()},
-            {'params': loss.parameters(), "weight_deacy": 0.}],
-            lr=optim_cfg["lr"],
-            momentum=optim_cfg["momentum"],
-            weight_decay=optim_cfg["weight_decay"])
+    _params = [{"params": backbone.parameters()},
+               {"params": loss.parameters()}]
 
-        scheduler_cfg = cfg["optimizer"]["sgd"]["scheduler"]
-        scheduler = lr_scheduler.MultiStepLR(optimizer,
-                                             scheduler_cfg["reduce_epochs"],
-                                             scheduler_cfg["gamma"])
-    else:
-        raise Exception("Train with other optimizers not implemented yeat")
+    optimizer, scheduler = get_optimizer(_params, cfg["optimizer"])
 
     logger.info(f"Start training with current configuration")
 
@@ -85,6 +76,7 @@ def train(arg):
 
     accuracy = None
     end_training = False
+    trainable_lst = [cfg["backbone"], loss_name]
 
     for epoch in range(epochs):
 
@@ -93,6 +85,9 @@ def train(arg):
 
         backbone.train()
         epoch_train_loss = 0
+
+        current_lr = scheduler.get_last_lr()
+        lr_verbose = ", ".join([f"{trainable_lst[idx]} - {current_lr[idx]}" for idx in range(len(current_lr))])
 
         for images, labels in train_loader:
             iter_counter += 1
@@ -106,8 +101,8 @@ def train(arg):
             train_loss.backward()
 
             optimizer.step()
-            logger.info(f"Iter: {iter_counter}/{epochs * len(train_loader)} | train_loss: {train_loss} \
-             {f'| current LR: {scheduler.get_last_lr()}' if show_lr else 0} | last_accuracy: {accuracy}")
+            logger.info(f"Iter: {iter_counter}/{epochs * len(train_loader)} | train_loss: {train_loss}\
+             {f'| current LR: {lr_verbose}' if show_lr else 0} | last_accuracy: {accuracy}")
 
         scheduler.step()
 
@@ -120,8 +115,8 @@ def train(arg):
                                                fpr=test_metrics["fpr"])
             accuracy = np.round(accuracy["accuracy"], 4)
 
-            logger.info(f"Epoch {epoch} / {epochs} results: train_loss: {epoch_train_loss} \
-            | {f'| current LR: {scheduler.get_last_lr()}' if show_lr else 0} | lfw-accuracy: {accuracy} | threshold: {np.round(thresh, 5)}")
+            logger.info(f"Epoch {epoch} / {epochs} results: train_loss: {np.round(epoch_train_loss, 8)}\
+            | {f'| current LR: {lr_verbose}' if show_lr else 0} | lfw-accuracy: {accuracy} | threshold: {np.round(thresh, 5)}")
 
             if early_stop:
                 early_stop(accuracy, epoch)

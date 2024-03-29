@@ -1,3 +1,8 @@
+from torch import optim
+import torch
+from torch.optim import lr_scheduler
+
+
 def get_pretrain_param_groups(model, skip_list=(), skip_keywords=()):
     has_decay = []
     no_decay = []
@@ -26,11 +31,43 @@ def check_keywords_in_name(name, keywords=()):
     return isin
 
 
-def build_optim(cfg):
+def get_optimizer(params, cfg):
     """
-    Not implemented yeat.
-    :param cfg: optimizer config
-    :return: optimizer
-    """
-    pass
 
+    :param model:
+    :param cfg:
+    :return:
+    """
+    if cfg.get("sgd", False):
+        optim_cfg = cfg["sgd"]
+        scheduler_cfg = optim_cfg["scheduler"]
+        optimizer = optim.SGD(params=params,
+                              lr=optim_cfg["base_lr"],
+                              weight_decay=optim_cfg["weight_decay"],
+                              momentum=optim_cfg["momentum"])
+        scheduler = lr_scheduler.MultiStepLR(optimizer,
+                                             scheduler_cfg["reduce_epochs"],
+                                             scheduler_cfg["gamma"])
+
+    elif cfg.get("adam", False):
+        optim_cfg = cfg["adam"]
+        scheduler_cfg = optim_cfg["scheduler"]
+        optimizer = optim.Adam(params=params,
+                               lr=optim_cfg["base_lr"],
+                               weight_decay=optim_cfg["weight_decay"])
+        scheduler = lr_scheduler.StepLR(optimizer,
+                                        scheduler_cfg["step"],
+                                        scheduler_cfg["gamma"])
+
+    elif cfg.get("adamw", False):
+        optim_cfg = cfg["adamw"]
+        scheduler_cfg = optim_cfg["scheduler"]
+        optimizer = optim.AdamW(params=params,
+                                lr=optim_cfg["base_lr"],
+                                weight_decay=optim_cfg["weight_decay"])
+        scheduler = lr_scheduler.StepLR(optimizer,
+                                        scheduler_cfg["step"],
+                                        scheduler_cfg["gamma"])
+    else:
+        raise Exception("Unexpected optimizer. Choose available optimizer: 'sgd', 'adam', 'adamw'")
+    return optimizer, scheduler

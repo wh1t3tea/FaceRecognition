@@ -27,7 +27,7 @@
   "pretrained": false,
   "optimizer": {
     "sgd": {
-      "lr": 0.1,
+      "base_lr": 0.1,
       "weight_decay": 5e-04,
       "momentum": 0.9,
       "scheduler": {
@@ -69,7 +69,7 @@
     "lfw-pair accuracy": {
       "pairs_dir": "F:\\lfw-pairs\\lfw",
       "tar@far_data_dir": "F:\\celeba_ir",
-      "fpr": 0.015
+      "fpr": 0.01
     }
   }
 }
