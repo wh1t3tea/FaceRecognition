@@ -1,0 +1,6 @@
+*.log
+**/test.py
+__pycache__/
+recognition/checkpoints/*
+desktop/faces/*
+desktop/person_base/*
