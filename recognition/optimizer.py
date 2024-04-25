@@ -31,17 +31,37 @@ def check_keywords_in_name(name, keywords=()):
     return isin
 
 
-def get_optimizer(params, cfg):
+def get_optimizer(entities, cfg):
     """
 
-    :param model:
+    :param entities:
     :param cfg:
     :return:
     """
+    params_bn = []
+    params = []
+
+    for entity in entities:
+        _params = []
+        _params_bn = []
+        for name, param in entity.named_parameters():
+            if not 'bn' in name:
+                _params.append(param)
+            else:
+                _params_bn.append(param)
+        params_bn.append(_params_bn)
+        params.append(_params)
+    bb_params, arc_params = params
+    bb_params_bn, arc_params_bn = params_bn
+    all_params = [{"params": bb_params},
+                  {"params": arc_params},
+                  {"params": bb_params_bn, "weight_decay": 0.},
+                  {"params": arc_params_bn, "weight_decay": 0.}]
+
     if cfg.get("sgd", False):
         optim_cfg = cfg["sgd"]
         scheduler_cfg = optim_cfg["scheduler"]
-        optimizer = optim.SGD(params=params,
+        optimizer = optim.SGD(params=all_params,
                               lr=optim_cfg["base_lr"],
                               weight_decay=optim_cfg["weight_decay"],
                               momentum=optim_cfg["momentum"])
@@ -52,7 +72,7 @@ def get_optimizer(params, cfg):
     elif cfg.get("adam", False):
         optim_cfg = cfg["adam"]
         scheduler_cfg = optim_cfg["scheduler"]
-        optimizer = optim.Adam(params=params,
+        optimizer = optim.Adam(params=all_params,
                                lr=optim_cfg["base_lr"],
                                weight_decay=optim_cfg["weight_decay"])
         scheduler = lr_scheduler.StepLR(optimizer,
@@ -62,7 +82,7 @@ def get_optimizer(params, cfg):
     elif cfg.get("adamw", False):
         optim_cfg = cfg["adamw"]
         scheduler_cfg = optim_cfg["scheduler"]
-        optimizer = optim.AdamW(params=params,
+        optimizer = optim.AdamW(params=all_params,
                                 lr=optim_cfg["base_lr"],
                                 weight_decay=optim_cfg["weight_decay"])
         scheduler = lr_scheduler.StepLR(optimizer,
