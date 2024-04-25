@@ -2,5 +2,5 @@
 **/test.py
 __pycache__/
 recognition/checkpoints/*
-faces/*
-person_base/*
+desktop/faces/*
+desktop/person_base/*
