@@ -2,6 +2,7 @@ import os
 import cv2
 import numpy as np
 import torch.cuda
+from dotenv import dotenv_values, set_key
 from insightface.app import FaceAnalysis
 import onnxruntime
 import timeit
@@ -14,6 +15,37 @@ from insightface.data import get_image
 np.int = int
 
 __alll__ = ["cosine_sim", "cosine_dist"]
+
+
+class FaceSet:
+    def __init__(self, folder_path, model_w, device):
+        self.device = device
+        self.folder_path = folder_path
+        self.root_dir = os.path.curdir
+        self.embeds = os.path.join(self.root_dir, "embeddgins")
+        if not os.path.exists(self.embeds):
+            os.makedirs(self.embeds)
+        self.model_r = RecognitionModel(model_w,
+                                        device=self.device)
+        self.model_d = DetectionModel()
+
+    def generate_embeddings(self):
+
+        for person_folder in os.listdir(self.folder_path):
+            person_path = os.path.join(self.folder_path, person_folder)
+            embedding_person = os.path.join(self.embeds, person_folder)
+            if not os.path.exists(embedding_person):
+                os.makedirs(embedding_person)
+            if os.path.isdir(person_path):
+                for person_photo in os.listdir(person_path):
+                    photo_path = os.path.join(person_path, person_photo)
+                    if os.path.isfile(photo_path):
+                        add_person(person_base=embedding_person,
+                                   person_path=person_path,
+                                   img=person_photo,
+                                   detection_model=self.model_d,
+                                   recognition_model=self.model_r)
+        return self.embeds
 
 
 class RecognitionModel:
@@ -59,8 +91,11 @@ class Finder:
         if self.persons is None:
             persons = {}
             for embed_n in os.listdir(self.embeds):
+                person_name = embed_n
+                person_root = os.path.join(self.embeds, embed_n)
+                embed_n = os.path.join(embed_n, os.listdir(person_root)[0])
                 embed_p = os.path.join(self.embeds, embed_n)
-                persons[embed_n] = torch.load(embed_p).to(self.device)
+                persons[person_name] = torch.load(embed_p).to(self.device)
             self.persons = persons
 
         if self.measure_name == "cosine_sim":
@@ -98,22 +133,7 @@ class DetectionModel:
         return rimg, meta
 
 
-def add_person(person_base,
-               person_name,
-               img,
-               detection_model,
-               recognition_model):
-    img = cv2.imread(img)
-    face, meta = detection_model.detect_frame(img)
-    embedding = recognition_model.embedding(face, meta)
-    person_file = os.path.join(person_base, person_name)
-    torch.save(embedding, person_file)
-
-
-# add_person("D:\PycharmProjects\FaceRecAPI\desktop\person_base", "alena", r"faces\photo_2024-04-20_17-38-12.jpg")
-
-
-class FaceRecognition   :
+class FaceRecognition:
     def __init__(self, model_weights, embedding_root, thresh, measure="cosine_sim", device="auto"):
         if device == "auto":
             self.device = "cuda" if torch.cuda.is_available() else "cpu"
@@ -147,9 +167,15 @@ class FaceRecognition   :
         return frame
 
 
-if __name__ == "__main__":
-    model_rec = "<RECOGNITION_MODEL_WEIGHTS>"
-    embedding_path = "<YOUR_EMBEDDINGS>"
-    thresh = 0.3
-    stream = FaceRecognition(model_rec, embedding_path, thresh)
-    stream.stream()
+def add_person(person_base,
+               img,
+               person_path,
+               detection_model,
+               recognition_model):
+    path = os.path.join(person_path, img)
+    image = cv2.imread(path)
+    face, meta = detection_model.detect_frame(image)
+    embedding = recognition_model.embedding(face, meta)
+    end_w = os.path.join(person_base, img).split(".")[-1]
+    save_path = os.path.join(person_base, img).replace(end_w, "pth")
+    torch.save(embedding, save_path)
