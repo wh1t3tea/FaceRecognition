@@ -1,8 +1,8 @@
 import os.path
 import sys
-
+from PyQt5.QtGui import QIcon
 import torch.cuda
-from PyQt5.QtWidgets import QApplication, QWidget, QLabel, QVBoxLayout, QPushButton, QComboBox, QFileDialog, QMessageBox
+from PyQt5.QtWidgets import QApplication, QWidget, QLabel, QVBoxLayout, QPushButton, QComboBox, QFileDialog, QMessageBox, QHBoxLayout, QGridLayout
 from PyQt5.QtGui import QPixmap, QImage
 from PyQt5.QtCore import Qt, QThread, pyqtSignal
 import cv2
@@ -10,7 +10,8 @@ import numpy as np
 from dotenv import load_dotenv, find_dotenv, dotenv_values, set_key
 from insightface.app import FaceAnalysis
 import onnxruntime
-from utils import FaceRecognition, FaceSet
+from models import FaceRecognition, FaceSet
+
 
 load_dotenv(find_dotenv())
 
@@ -37,59 +38,87 @@ class MainWindow(QWidget):
         super().__init__()
         self.recognition_thread = None
         self.setWindowTitle("IdentityX")
-        self.setGeometry(100, 100, 800, 600)
+        icon_path = "static/app_icon.ico"
+        self.setWindowIcon(QIcon(icon_path))
 
         self.faces_path = os.getenv("face_root")
 
-        self.layout = QVBoxLayout()
+        layout = QGridLayout(self)
+        layout.setSpacing(20)
 
-        self.device_label = QLabel("Select Device:")
-        self.device_combo = QComboBox()
+        header_label = QLabel("IdentityX - Face Recognition System", self)
+        header_label.setAlignment(Qt.AlignCenter)
+        header_label.setStyleSheet("font-size: 24px; font-weight: bold; color: #333;")
+        layout.addWidget(header_label, 0, 0, 1, 2)
 
-        # Populate device combo with available devices
-
-        self.camera_label = QLabel("Select Camera:")
-        self.camera_combo = QComboBox()
-
+        device_label = QLabel("Select Device:", self)
+        device_label.setStyleSheet("font-size: 16px; color: #666;")
+        layout.addWidget(device_label, 1, 0)
+        self.device_combo = QComboBox(self)
         self.populate_device_combo()
-        self.populate_camera_combo()
-        if os.getenv("face_root") != "":
-            self.create_database_button = QPushButton("Change your employees database")
-        else:
-            self.create_database_button = QPushButton("Create your employees database")
-        self.create_database_button.setGeometry(150, 80, 200, 50)
+        layout.addWidget(self.device_combo, 1, 1)
 
-        self.start_button = QPushButton("Start")
+        camera_label = QLabel("Select Camera:", self)
+        camera_label.setStyleSheet("font-size: 16px; color: #666;")
+        layout.addWidget(camera_label, 2, 0)
+        self.camera_combo = QComboBox(self)
+        self.populate_camera_combo()
+        layout.addWidget(self.camera_combo, 2, 1)
+
+        self.create_database_button = QPushButton("Create/Change Database", self)
+
+        self.create_database_button.setStyleSheet("""
+            QPushButton {
+                font-size: 16px;
+                color: #fff;
+                background-color: #007bff;
+                border: none;
+                padding: 10px 20px;
+                min-width: 100px;
+                max-width: 200px;
+                margin-left: 260 px;
+                margin-top: 20px;
+            }
+        """)
+        self.create_database_button.clicked.connect(self.on_create_database_clicked)
+        layout.addWidget(self.create_database_button, 3, 0, 1, 2)
+
+        self.start_button = QPushButton("Start Recognition", self)
+        self.start_button.setStyleSheet("""
+            QPushButton {
+                font-size: 16px;
+                color: #fff;
+                background-color: #007bff;
+                border: none;
+                padding: 10px 20px; /* Верхний и нижний отступы 10px, левый и правый отступы 20px */
+                min-width: 100px; /* Минимальная ширина кнопки */
+                max-width: 200px; /* Максимальная ширина кнопки */
+                margin-left: 260 px; /* Выравнивание кнопки по центру горизонтали */
+                margin-top: 5px;
+            }
+        """)
+        self.start_button.clicked.connect(self.on_start_recognition_clicked)
+        layout.addWidget(self.start_button, 4, 0, 1, 2)
 
         self.video_label = QLabel(self)
-        self.video_label.setFixedSize(640, 480)
+        self.video_label.setScaledContents(True)
+        self.video_label.setMinimumSize(640, 480)
+        layout.addWidget(self.video_label, 5, 0, 1, 2)
+        self.video_thread = None
 
-        self.layout.addWidget(self.device_label)
-        self.layout.addWidget(self.device_combo)
-        self.layout.addWidget(self.camera_label)
-        self.layout.addWidget(self.camera_combo)
-        self.layout.addWidget(self.start_button)
-        self.layout.addWidget(self.video_label)
-        self.layout.addWidget(self.create_database_button)
+        self.setLayout(layout)
+        self.setMinimumSize(800, 800)
+        self.setMaximumSize(800, 800)
+
         self.use_device = self.device_combo.currentIndex()
         self.embeddings = None
-
-        self.setLayout(self.layout)
-
-        self.video_thread = None
         self.face_cfg = face_cfg
-
-        self.create_database_button.clicked.connect(self.on_create_database_clicked)
-        self.start_button.clicked.connect(self.on_start_recognition_clicked)
-
     def populate_camera_combo(self):
-        # Get the number of cameras available
-        num_cameras = 1  # Adjust the number of cameras as per your system
+        num_cameras = 1
         for i in range(num_cameras):
             self.camera_combo.addItem(f"Camera {i}")
 
     def populate_device_combo(self):
-        # Add CPU
         self.device_combo.addItem("CPU")
         for i in range(torch.cuda.device_count()):
             self.device_combo.addItem(f"CUDA:{i}")
@@ -155,13 +184,11 @@ class MainWindow(QWidget):
         msg_box.exec_()
 
     def update_image(self, frame):
-        """Updates the image_label with a new opencv image"""
         qt_img = self.convert_cv_qt(frame)
         self.video_label.setPixmap(qt_img)
 
     @staticmethod
     def convert_cv_qt(frame):
-        """Convert from an opencv image to QPixmap"""
         rgb_image = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
         h, w, ch = rgb_image.shape
         bytes_per_line = ch * w

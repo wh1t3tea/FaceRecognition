@@ -1,5 +1,5 @@
 {
-  "data_path": "F:\\faces_vgg_112x112\\faces_vgg_112x112",
+  "data_path": "F:\\casia-webface",
   "callbacks": {
     "earlystop": {
       "on": "accuracy",
@@ -28,7 +28,7 @@
   "optimizer": {
     "sgd": {
       "base_lr": 0.1,
-      "weight_decay": 1e-04,
+      "weight_decay": 5e-04,
       "momentum": 0.9,
       "scheduler": {
         "reduce_epochs": [
@@ -36,7 +36,11 @@
           4,
           5,
           6,
-          7],
+          7,
+          10,
+          13,
+          16,
+          20],
         "gamma": 0.1
       }
     },
@@ -56,8 +60,8 @@
   },
   "loss": {
     "arcface": {
-      "scale": 64.0,
-      "num_classes": 8631
+      "scale": 32.0,
+      "num_classes": 10572
     }
   },
   "batch_size": 256,
@@ -68,5 +72,7 @@
       "tar@far_data_dir": "F:\\celeba_ir",
       "fpr": 0.01
     }
-  }
+  },
+  "gradient_accumulation_steps": 1,
+  "log_iters": 10
 }

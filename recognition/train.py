@@ -16,6 +16,7 @@ from optimizer import get_optimizer
 from loss.arcface import ArcMarginProduct
 from torch import nn
 
+
 def train(arg):
     cfg = load_cfg(arg)
 
@@ -28,8 +29,8 @@ def train(arg):
 
     epochs = cfg["epochs"]
 
-    train_loader = get_mx_dataloader(root_dir=cfg["data_path"],
-                                  batch_size=cfg["batch_size"])
+    train_loader = get_dataloader(root_dir=cfg["data_path"],
+                                     batch_size=cfg["batch_size"])
     metric = Evaluate(test_metrics["pairs_dir"],
                       test_metrics["tar@far_data_dir"],
                       test_metrics["fpr"])
@@ -37,7 +38,7 @@ def train(arg):
     if cfg["loss"].get("arcface", False):
         loss_cfg = cfg["loss"]["arcface"]
         loss_name = "arcface"
-        #loss = ArcFaceLoss(cfg["loss"]["arcface"]["num_classes"],
+        # loss = ArcFaceLoss(cfg["loss"]["arcface"]["num_classes"],
         #                  cfg["embedding_size"],
         #                   scale=cfg["loss"]["arcface"]["scale"]).to(device)
         arc_margin = ArcMarginProduct(in_features=cfg["embedding_size"],
@@ -80,74 +81,65 @@ def train(arg):
 
     accuracy = None
     end_training = False
-    last_lr = 0.1
+
+    iters_to_log = cfg["log_iters"]
+
+    if cfg["gradient_accumulation_steps"] > 1:
+        grad_accumulation = True
+        grad_accum_iters = cfg["gradient_accumulation_steps"]
+    else:
+        grad_accumulation = False
+        grad_accum_iters = 1
+
+    trainable_lst = [cfg["backbone"], "arcface"]
+
     for epoch in range(epochs):
-        if epoch == 1:
-            arc_margin.s = 64.0
 
         if end_training:
             break
 
+        backbone.train()
         epoch_train_loss = 0
 
-        loss_accumulation = 0
+        current_lr = scheduler.get_last_lr()
+        lr_verbose = ", ".join([f"{trainable_lst[idx]} - {current_lr}" for idx in range(2)])
+
         for images, labels in train_loader:
             iter_counter += 1
-            backbone.train()
-            if iter_counter % 40 == 0:
-                for param in optimizer.param_groups:
-                    param["lr"] = param["lr"] - 0.00005
-                    last_lr = param["lr"]
-
             images, labels = images.to(device), labels.to(device)
+
+            optimizer.zero_grad()
             embeddings = backbone(images)
             logits = arc_margin(embeddings, labels)
+
             train_loss = criterion(logits, labels)
-            train_loss = train_loss / 4
-            loss_accumulation += train_loss
+            epoch_train_loss += train_loss.detach()
             train_loss.backward()
-            if iter_counter % 4 == 0:
-                if epoch_train_loss != 0:
-                    epoch_train_loss = epoch_train_loss.detach().cpu()
-                epoch_train_loss += loss_accumulation.detach().cpu()
-                torch.nn.utils.clip_grad_norm_(backbone.parameters(), 5)
-                optimizer.step()
-                loss_accumulation = 0
-                optimizer.zero_grad()
-            if iter_counter % 40 == 0:
-                logger.info(
-                    f"Iter: {iter_counter // 4}/{epochs * len(train_loader) // 4} | train_loss: {'{:.8f}'.format(epoch_train_loss / iter_counter * 4)} {f'| current LR: {last_lr}' if show_lr else 0} | last_accuracy: {accuracy}")
 
-            if iter_counter % 2000 == 0:
-                with torch.inference_mode():
-                    backbone.eval()
-                    epoch_train_loss = np.round(epoch_train_loss.detach().cpu(), decimals=5)
-
-                    accuracy, thresh = metric.accuracy(model=backbone,
-                                                       metrics=["accuracy"],
-                                                       fpr=test_metrics["fpr"])
-                    accuracy = np.round(accuracy["accuracy"], 4)
-
-                    logger.info(
-                        f"Iter {iter_counter // 4} / {epochs * len(train_loader) // 4} results: train_loss: {'{:.8f}'.format(epoch_train_loss / iter_counter * 4)} | {f'| current LR: {last_lr}' if show_lr else 0} | lfw-accuracy: {accuracy} | threshold: {np.round(thresh, 5)}")
+            optimizer.step()
+            logger.info(f"Iter: {iter_counter}/{epochs * len(train_loader)} | train_loss: {train_loss}\
+                 {f'| current LR: {lr_verbose}' if show_lr else 0} | last_accuracy: {accuracy}")
 
         scheduler.step()
 
         with torch.inference_mode():
             backbone.eval()
-            epoch_train_loss = np.round(epoch_train_loss.detach().cpu() / iter_counter, decimals=5)
+            epoch_train_loss = np.round(epoch_train_loss.cpu() / len(train_loader), decimals=5)
 
             accuracy, thresh = metric.accuracy(model=backbone,
                                                metrics=["accuracy"],
                                                fpr=test_metrics["fpr"])
             accuracy = np.round(accuracy["accuracy"], 4)
 
-            logger.info(f"Epoch {epoch} / {epochs} results: train_loss: {'{:.8f}'.format(epoch_train_loss * 4)} | {f'| current LR: {current_lr}' if show_lr else 0} | lfw-accuracy: {accuracy} | threshold: {np.round(thresh, 5)}")
+            logger.info(f"Epoch {epoch} / {epochs} results: train_loss: {np.round(epoch_train_loss, 8)}\
+                | {f'| current LR: {lr_verbose}' if show_lr else 0} | lfw-accuracy: {accuracy} | threshold: {np.round(thresh, 5)}")
 
             if early_stop:
                 early_stop(accuracy, epoch)
                 end_training = early_stop.early_stopping
-                logger.info(f"Training ends on Epoch: {epoch}/{epochs}.")
+
+    logger.info(f"Training ends on Epoch: {epoch}/{epochs}.")
+
 
 
 if __name__ == "__main__":
