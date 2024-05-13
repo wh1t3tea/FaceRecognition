@@ -90,10 +90,10 @@ class MainWindow(QWidget):
                 color: #fff;
                 background-color: #007bff;
                 border: none;
-                padding: 10px 20px; /* Верхний и нижний отступы 10px, левый и правый отступы 20px */
-                min-width: 100px; /* Минимальная ширина кнопки */
-                max-width: 200px; /* Максимальная ширина кнопки */
-                margin-left: 260 px; /* Выравнивание кнопки по центру горизонтали */
+                padding: 10px 20px;
+                min-width: 100px;
+                max-width: 200px;
+                margin-left: 260 px;
                 margin-top: 5px;
             }
         """)
