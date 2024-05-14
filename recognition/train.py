@@ -18,29 +18,34 @@ from torch import nn
 
 
 def train(arg):
+    # Load configuration file
     cfg = load_cfg(arg)
 
+    # Setup logging
     log_path = cfg["logging"]["path"]
     logger = setup_train_logging(log_path)
 
+    # Device configuration (CPU/GPU)
     device = cfg["device"]
 
+    # Load test metrics configuration
     test_metrics = cfg['metric']["lfw-pair accuracy"]
 
+    # Number of epochs to train
     epochs = cfg["epochs"]
 
-    train_loader = get_dataloader(root_dir=cfg["data_path"],
-                                     batch_size=cfg["batch_size"])
+    # Prepare dataloader for training data
+    train_loader = get_dataloader(root_dir=cfg["data_path"], batch_size=cfg["batch_size"])
+
+    # Initialize evaluation metric for LFW benchmark
     metric = Evaluate(test_metrics["pairs_dir"],
                       test_metrics["tar@far_data_dir"],
                       test_metrics["fpr"])
 
+    # Loss function configuration
     if cfg["loss"].get("arcface", False):
         loss_cfg = cfg["loss"]["arcface"]
         loss_name = "arcface"
-        # loss = ArcFaceLoss(cfg["loss"]["arcface"]["num_classes"],
-        #                  cfg["embedding_size"],
-        #                   scale=cfg["loss"]["arcface"]["scale"]).to(device)
         arc_margin = ArcMarginProduct(in_features=cfg["embedding_size"],
                                       out_features=loss_cfg["num_classes"],
                                       s=loss_cfg["scale"], m=0.5).to(device)
@@ -48,6 +53,7 @@ def train(arg):
     else:
         raise Exception(f"Unexpected loss: {cfg['loss']}")
 
+    # Backbone model configuration
     if cfg["backbone"][:7] == "iresnet":
         backbone = get_iresnet(cfg["backbone"]).to(device)
     elif cfg["backbone"] == "ghostfacenetv2":
@@ -56,18 +62,18 @@ def train(arg):
     else:
         raise Exception(f"Unknown backbone: {cfg['backbone']}")
 
+    # List of trainable entities
     trainable_entities = [backbone, arc_margin]
 
+    # Initialize optimizer and scheduler
     optimizer, scheduler = get_optimizer(trainable_entities, cfg["optimizer"])
 
-    logger.info(f"Start training with current configuration")
+    logger.info("Start training with current configuration")
 
     iter_counter = 0
+    show_lr = cfg["logging"].get("show_lr", False)
 
-    show_lr = False
-    if cfg["logging"]["show_lr"]:
-        show_lr = True
-
+    # Early stopping configuration
     if cfg["callbacks"].get("earlystop", False):
         early_stop_cfg = cfg["callbacks"]["earlystop"]
         early_stop = EarlyStop(path=early_stop_cfg["chkpt_path"],
@@ -81,11 +87,12 @@ def train(arg):
 
     accuracy = None
     end_training = False
-
     iters_to_log = cfg["log_iters"]
 
+    # Gradient accumulation configuration
     if cfg["gradient_accumulation_steps"] > 1:
         grad_accumulation = True
+        loss_accumulation = 0
         grad_accum_iters = cfg["gradient_accumulation_steps"]
     else:
         grad_accumulation = False
@@ -94,7 +101,6 @@ def train(arg):
     trainable_lst = [cfg["backbone"], "arcface"]
 
     for epoch in range(epochs):
-
         if end_training:
             break
 
@@ -102,23 +108,39 @@ def train(arg):
         epoch_train_loss = 0
 
         current_lr = scheduler.get_last_lr()
-        lr_verbose = ", ".join([f"{trainable_lst[idx]} - {current_lr}" for idx in range(2)])
 
         for images, labels in train_loader:
             iter_counter += 1
             images, labels = images.to(device), labels.to(device)
-
-            optimizer.zero_grad()
             embeddings = backbone(images)
             logits = arc_margin(embeddings, labels)
+            if grad_accumulation:
+                train_loss = criterion(logits, labels)
+                train_loss.backward()
 
-            train_loss = criterion(logits, labels)
-            epoch_train_loss += train_loss.detach()
-            train_loss.backward()
+                epoch_train_loss += train_loss.detach()
+                loss_accumulation += train_loss.detach()
 
-            optimizer.step()
-            logger.info(f"Iter: {iter_counter}/{epochs * len(train_loader)} | train_loss: {train_loss}\
-                 {f'| current LR: {lr_verbose}' if show_lr else 0} | last_accuracy: {accuracy}")
+                if iter_counter % grad_accum_iters == 0:
+                    torch.nn.utils.clip_grad_norm_(backbone.parameters(), 5)
+                    optimizer.step()
+                    optimizer.zero_grad()
+            else:
+                optimizer.zero_grad()
+                train_loss = criterion(logits, labels)
+                train_loss.backward()
+                epoch_train_loss += train_loss.detach()
+                optimizer.step()
+
+            if iter_counter % iters_to_log == 0:
+                logger.info(f"Iter: {iter_counter}/{epochs * len(train_loader)} | train_loss: {train_loss}" +
+                            f" | current LR: {current_lr if show_lr else 0} | last_accuracy: {accuracy}")
+
+            elif grad_accumulation and iter_counter % grad_accum_iters == 0:
+                logger.info(
+                    f"Iter: {iter_counter}/{epochs * len(train_loader)} | train_loss: {loss_accumulation.mean()}" +
+                    f" | current LR: {current_lr if show_lr else 0} | last_accuracy: {accuracy}")
+                loss_accumulation = 0
 
         scheduler.step()
 
@@ -130,9 +152,8 @@ def train(arg):
                                                metrics=["accuracy"],
                                                fpr=test_metrics["fpr"])
             accuracy = np.round(accuracy["accuracy"], 4)
-
-            logger.info(f"Epoch {epoch} / {epochs} results: train_loss: {np.round(epoch_train_loss, 8)}\
-                | {f'| current LR: {lr_verbose}' if show_lr else 0} | lfw-accuracy: {accuracy} | threshold: {np.round(thresh, 5)}")
+            logger.info(f"Epoch {epoch} / {epochs} results: train_loss: {np.round(epoch_train_loss, 8)}" +
+                        f" | current LR: {current_lr if show_lr else 0} | lfw-accuracy: {accuracy} | threshold: {np.round(thresh, 5)}")
 
             if early_stop:
                 early_stop(accuracy, epoch)
@@ -141,12 +162,8 @@ def train(arg):
     logger.info(f"Training ends on Epoch: {epoch}/{epochs}.")
 
 
-
 if __name__ == "__main__":
     torch.backends.cudnn.benchmark = True
-    parser = argparse.ArgumentParser(
-        description="Arcface Training")
-    parser.add_argument("config",
-                        type=str,
-                        help="path to your .json cfg")
+    parser = argparse.ArgumentParser(description="Arcface Training")
+    parser.add_argument("config", type=str, help="path to your .json cfg")
     train(parser.parse_args())
