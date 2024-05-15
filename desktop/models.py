@@ -22,7 +22,7 @@ class FaceSet:
         self.device = device
         self.folder_path = folder_path
         self.root_dir = os.path.curdir
-        self.embeds = os.path.join(self.root_dir, "embeddgins")
+        self.embeds = os.path.join(self.root_dir, "embeddings")
         if not os.path.exists(self.embeds):
             os.makedirs(self.embeds)
         self.model_r = RecognitionModel(model_w,

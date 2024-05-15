@@ -199,7 +199,7 @@ class MainWindow(QWidget):
 
 if __name__ == '__main__':
     app = QApplication([])
-    model_rec = "weights/ghostface4.pth"
+    model_rec = "./weights/ghostface4.pth"
     thresh = 0.3
     cfg = [model_rec, thresh]
     window = MainWindow(cfg)
