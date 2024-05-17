@@ -146,6 +146,9 @@ Once the application is running, you can perform the following actions:
 ## Model weights
 - [GhostFaceNetV2](https://github.com/wh1t3tea/face-recognition/blob/main/ghostfacenet_v2_4_1.pth)
 
+## Train logs
+- [train-logs](https://www.dropbox.com/scl/fi/smbfu9q9f6zn0424yg2i8/train.log?rlkey=xnwp2r6r27yu94fxkvapgc6hq&st=4rzjs3if&dl=0)
+
 ## Datasets
 - [Casia-WebFace_aligned](https://www.kaggle.com/datasets/wannad1e/casia-aligned)
 - [VGGface2](https://www.kaggle.com/datasets/wannad1e/vggface2)
