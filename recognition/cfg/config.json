@@ -1,11 +1,11 @@
 {
-  "data_path": "F:\\casia-webface",
+  "data_path": "casia-webface",
   "callbacks": {
     "earlystop": {
       "on": "accuracy",
       "patience": 7,
       "verbose": false,
-      "chkpt_path": "D:/PycharmProjects/FaceRecAPI/face-recognition/recognition/checkpoints"
+      "chkpt_path": "face-recognition/recognition/checkpoints"
     },
     "save_weights": {
       "backbone": true,
@@ -15,7 +15,7 @@
     }
   },
   "logging": {
-    "path": "D:\\PycharmProjects\\FaceRecAPI\\face-recognition\\train_logs\\train.log",
+    "path": "face-recognition\\train_logs\\train.log",
     "pause": 0,
     "show_lr": true
   },
@@ -68,8 +68,8 @@
   "valid": false,
   "metric": {
     "lfw-pair accuracy": {
-      "pairs_dir": "F:\\lfw-pairs\\lfw",
-      "tar@far_data_dir": "F:\\celeba_ir",
+      "pairs_dir": "lfw-pairs\\lfw",
+      "tar@far_data_dir": "celeba_ir",
       "fpr": 0.01
     }
   },
