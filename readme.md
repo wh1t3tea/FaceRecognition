@@ -4,14 +4,14 @@ This repository implements a real-time face recognition system using a lightweig
 
 Links to all mentioned datasets and model weights can be found at the bottom of the page.
 
-## Image Preprocessing
+# Image Preprocessing
 
 For datasets, I have developed a module for alignment using RetinaFace for face and landmarks detection. RetinaFace outputs bounding boxes and 5 facial landmarks. In my alignment pipeline, I used `cv2.warpAffine` to rotate faces based on these landmarks. All datasets have been preprocessed using this script, ensuring consistent cropping and alignment.
 
 ![image](https://github.com/wh1t3tea/face-recognition/assets/128380279/c4dfdbd7-6387-4a9d-aed3-8826758a2b81)
 
 
-## GhostFaceNetV2
+# GhostFaceNetV2
 
 [GhostFaceNetV2](https://ieeexplore.ieee.org/document/10098610) is a lightweight convolutional neural network (CNN) with a backbone derived from MobileNet. Its main feature is the use of attention mechanisms. The architecture is based on depth-wise and point-wise convolutional blocks, ensuring efficient and effective performance.
 
@@ -24,28 +24,10 @@ Original TensorFlow [implementation](https://github.com/HamadYA/GhostFaceNets)
 
 ## Training
 
-## Train notebook
+### Train notebook
 For experimentation and similar purposes, we provide a [notebook](https://github.com/wh1t3tea/face-recognition/blob/main/examples/arcface-training.ipynb) with a complete pipeline for training and testing the model.
 
 ![image](https://github.com/wh1t3tea/face-recognition/assets/128380279/3064adcb-47ef-44d0-ab62-7739b9d796eb)
-
-
-### Dataset
-
-The model was trained on the open-source face-dataset:
-- [Casia-WebFace dataset](https://arxiv.org/abs/1411.7923) - 0.5 million images/10k persons.
-This dataset comprises images of 10,572 individuals. While it is a refined iteration of the Casia dataset, it still exhibits class imbalance. To address this, we advise implementing the [WeightedRandomSampler](https://pytorch.org/docs/stable/data.html#torch.utils.data.WeightedRandomSampler) technique, which helps enhance class stability by appropriately weighting samples during the training process.
-
-### ArcFaceLoss
-
-The model was trained using ArcFaceLoss, a sophisticated loss function tailored for face recognition tasks. ArcFaceLoss enhances the discriminative power between classes by adding an angular margin to the cosine similarity between feature embeddings and class centers. This margin encourages the model to learn more separable feature representations, resulting in improved performance in face recognition tasks.
-
-### Metrics
-
-The repository provides the trained model weights, with the following metrics:
-- 98.9% accuracy on the [LFW benchmark](https://paperswithcode.com/sota/face-recognition-on-lfw).
-- TAR@FAR=0.01 - 0.91 on [Celeba500](https://www.kaggle.com/datasets/wannad1e/celeba-500-label-folders).
-
 ### Train Configuration
 
 We provided a detailed train configuration file (`config.json`) with adjustable parameters such as learning rates, batch size, and optimizer settings.
@@ -53,6 +35,24 @@ For our training setup, we utilized the Stochastic Gradient Descent (SGD) optimi
 In the ArcMargin loss configuration, we incorporated a margin value of 0.5 and a scale factor of 32. These parameters play a crucial role in shaping the loss function's behavior, specifically in enhancing the discrimination between classes during training. The margin value introduces angular margins between different classes, while the scale factor adjusts the magnitude of feature embeddings, ultimately contributing to improved face recognition performance.
 
 The complete training configuration used to train the model is available at the following [link](https://github.com/wh1t3tea/face-recognition/blob/main/recognition/cfg/config.json)
+
+
+## Dataset
+
+The model was trained on the open-source face-dataset:
+- [Casia-WebFace dataset](https://arxiv.org/abs/1411.7923) - 0.5 million images/10k persons.
+This dataset comprises images of 10,572 individuals. While it is a refined iteration of the Casia dataset, it still exhibits class imbalance. To address this, we advise implementing the [WeightedRandomSampler](https://pytorch.org/docs/stable/data.html#torch.utils.data.WeightedRandomSampler) technique, which helps enhance class stability by appropriately weighting samples during the training process.
+
+## ArcFaceLoss
+
+The model was trained using ArcFaceLoss, a sophisticated loss function tailored for face recognition tasks. ArcFaceLoss enhances the discriminative power between classes by adding an angular margin to the cosine similarity between feature embeddings and class centers. This margin encourages the model to learn more separable feature representations, resulting in improved performance in face recognition tasks.
+
+## Metrics
+
+The repository provides the trained model weights, with the following metrics:
+- 98.9% accuracy on the [LFW benchmark](https://paperswithcode.com/sota/face-recognition-on-lfw).
+- TAR@FAR=0.01 - 0.91 on [Celeba500](https://www.kaggle.com/datasets/wannad1e/celeba-500-label-folders).
+
 ## Recognition
 The key feature of this model's architecture is its lightweight nature, making it ideal for local deployment of face recognition systems on a CPU. Without using CUDA, the pipeline with the RetinaFace face detection model (S size) achieves 12-15 fps on a consumer-grade 6-core processor.
 GPU inference allows to reach more then 30 fps.
