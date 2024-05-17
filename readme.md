@@ -24,6 +24,12 @@ Original TensorFlow [implementation](https://github.com/HamadYA/GhostFaceNets)
 
 ## Training
 
+## Train notebook
+For experimentation and similar purposes, we provide a [notebook](https://github.com/wh1t3tea/face-recognition/blob/main/examples/arcface-training.ipynb) with a complete pipeline for training and testing the model.
+
+![image](https://github.com/wh1t3tea/face-recognition/assets/128380279/3064adcb-47ef-44d0-ab62-7739b9d796eb)
+
+
 ### Dataset
 
 The model was trained on the open-source face-dataset:
@@ -137,10 +143,12 @@ Once the application is running, you can perform the following actions:
     <img src="https://github.com/wh1t3tea/face-recognition/assets/128380279/5c39460a-9752-46f7-a80c-a439107c352f" alt="Image 2" style="width: 45%;">
   </div>
 
-
+## Model weights
+- [GhostFaceNetV2](https://github.com/wh1t3tea/face-recognition/blob/main/ghostfacenet_v2_4_1.pth)
 
 ## Datasets
 - [Casia-WebFace_aligned](https://www.kaggle.com/datasets/wannad1e/casia-aligned)
+- [VGGface2](https://www.kaggle.com/datasets/wannad1e/vggface2)
 - [Celeba500](https://www.kaggle.com/datasets/wannad1e/celeba-500-label-folders)
 - [LFW-id-rate](https://www.kaggle.com/datasets/wannad1e/ssssas)
 - [LFW-pair-benchmark](https://www.kaggle.com/datasets/wannad1e/lfw-benchmark)
