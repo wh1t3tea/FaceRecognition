@@ -26,8 +26,9 @@ Original TensorFlow [implementation](https://github.com/HamadYA/GhostFaceNets)
 
 ### Dataset
 
-The model was trained on the open-source dataset:
+The model was trained on the open-source face-dataset:
 - [Casia-WebFace dataset](https://arxiv.org/abs/1411.7923) - 0.5 million images/10k persons.
+This dataset comprises images of 10,572 individuals. While it is a refined iteration of the Casia dataset, it still exhibits class imbalance. To address this, we advise implementing the [WeightedRandomSampler](https://pytorch.org/docs/stable/data.html#torch.utils.data.WeightedRandomSampler) technique, which helps enhance class stability by appropriately weighting samples during the training process.
 
 ### ArcFaceLoss
 
@@ -42,9 +43,13 @@ The repository provides the trained model weights, with the following metrics:
 ### Train Configuration
 
 We provided a detailed train configuration file (`config.json`) with adjustable parameters such as learning rates, batch size, and optimizer settings.
+For our training setup, we utilized the Stochastic Gradient Descent (SGD) optimizer with an initial learning rate of 0.1. The training process spanned 30 epochs, with a batch size of 256. Additionally, we employed a MultiStepLR scheduler with a step size of 3 and a gamma value of 0.1 to adjust the learning rate at specific intervals during training.
+In the ArcMargin loss configuration, we incorporated a margin value of 0.5 and a scale factor of 32. These parameters play a crucial role in shaping the loss function's behavior, specifically in enhancing the discrimination between classes during training. The margin value introduces angular margins between different classes, while the scale factor adjusts the magnitude of feature embeddings, ultimately contributing to improved face recognition performance.
+
+The complete training configuration used to train the model is available at the following [link](https://github.com/wh1t3tea/face-recognition/blob/main/recognition/cfg/config.json)
 ## Recognition
 The key feature of this model's architecture is its lightweight nature, making it ideal for local deployment of face recognition systems on a CPU. Without using CUDA, the pipeline with the RetinaFace face detection model (S size) achieves 12-15 fps on a consumer-grade 6-core processor.
-GPU inference allows to reach more then 30 fps
+GPU inference allows to reach more then 30 fps.
 
 ## How to Use
 
@@ -65,7 +70,7 @@ GPU inference allows to reach more then 30 fps
     ```bash
     python train.py --config cfg/config.json
     ```
-# Desktop Application
+## Desktop Application
 
 In addition to the face recognition model, we offer a user-friendly desktop application for real-time face recognition. This application provides a convenient interface for running face recognition locally on your machine.
 
@@ -119,10 +124,11 @@ Once the application is running, you can perform the following actions:
   
   ![image](https://github.com/wh1t3tea/face-recognition/assets/128380279/70f4947f-5809-40ef-a3e0-53688c28175f)
 
-- **Adjust Settings**: Modify settings such as face detection threshold, recognition confidence level, and camera resolution to optimize performance:
-
+- **Adjust Settings**: Modify settings such as face detection threshold, recognition confidence level, device and camera resolution to optimize performance:
 
   ![image](https://github.com/wh1t3tea/face-recognition/assets/128380279/1521d3fc-0175-4ab9-911e-1a18f897d670)
+
+   If you intend to use GPU acceleration within our application, make sure to install the necessary CUDA drivers and cuDNN libraries. These components are vital for unlocking GPU capabilities and maximizing performance.
   
 - **View Recognition Results**: View recognized faces and corresponding labels in the application interface in real-time. You can also adjust your callbacks:
 
@@ -133,7 +139,7 @@ Once the application is running, you can perform the following actions:
 
 
 
-# Dataset
+## Datasets
 - [Casia-WebFace_aligned](https://www.kaggle.com/datasets/wannad1e/casia-aligned)
 - [Celeba500](https://www.kaggle.com/datasets/wannad1e/celeba-500-label-folders)
 - [LFW-id-rate](https://www.kaggle.com/datasets/wannad1e/ssssas)
