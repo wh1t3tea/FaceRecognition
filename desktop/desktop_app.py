@@ -2,7 +2,8 @@ import os.path
 import sys
 from PyQt5.QtGui import QIcon
 import torch.cuda
-from PyQt5.QtWidgets import QApplication, QWidget, QLabel, QVBoxLayout, QPushButton, QComboBox, QFileDialog, QMessageBox, QHBoxLayout, QGridLayout
+from PyQt5.QtWidgets import QApplication, QWidget, QLabel, QVBoxLayout, QPushButton, QComboBox, QFileDialog, \
+    QMessageBox, QHBoxLayout, QGridLayout
 from PyQt5.QtGui import QPixmap, QImage
 from PyQt5.QtCore import Qt, QThread, pyqtSignal
 import cv2
@@ -11,7 +12,7 @@ from dotenv import load_dotenv, find_dotenv, dotenv_values, set_key
 from insightface.app import FaceAnalysis
 import onnxruntime
 from models import FaceRecognition, FaceSet
-
+import stylesheet.button as s
 
 load_dotenv(find_dotenv())
 
@@ -67,36 +68,12 @@ class MainWindow(QWidget):
 
         self.create_database_button = QPushButton("Create/Change Database", self)
 
-        self.create_database_button.setStyleSheet("""
-            QPushButton {
-                font-size: 16px;
-                color: #fff;
-                background-color: #007bff;
-                border: none;
-                padding: 10px 20px;
-                min-width: 100px;
-                max-width: 200px;
-                margin-left: 260 px;
-                margin-top: 20px;
-            }
-        """)
+        self.create_database_button.setStyleSheet(s.button)
         self.create_database_button.clicked.connect(self.on_create_database_clicked)
         layout.addWidget(self.create_database_button, 3, 0, 1, 2)
 
         self.start_button = QPushButton("Start Recognition", self)
-        self.start_button.setStyleSheet("""
-            QPushButton {
-                font-size: 16px;
-                color: #fff;
-                background-color: #007bff;
-                border: none;
-                padding: 10px 20px;
-                min-width: 100px;
-                max-width: 200px;
-                margin-left: 260 px;
-                margin-top: 5px;
-            }
-        """)
+        self.start_button.setStyleSheet(s.button)
         self.start_button.clicked.connect(self.on_start_recognition_clicked)
         layout.addWidget(self.start_button, 4, 0, 1, 2)
 
@@ -107,12 +84,13 @@ class MainWindow(QWidget):
         self.video_thread = None
 
         self.setLayout(layout)
-        self.setMinimumSize(800, 800)
-        self.setMaximumSize(800, 800)
+        self.setMinimumSize(800, 400)
+        self.setMaximumSize(800, 400)
 
         self.use_device = self.device_combo.currentIndex()
         self.embeddings = None
         self.face_cfg = face_cfg
+
     def populate_camera_combo(self):
         num_cameras = 1
         for i in range(num_cameras):
@@ -129,6 +107,8 @@ class MainWindow(QWidget):
             self.faces_path = folder_path
 
     def on_start_recognition_clicked(self):
+        self.setMinimumSize(800, 800)
+        self.setMaximumSize(800, 800)
         if not self.faces_path:
             self.show_warning_dialog()
         else:

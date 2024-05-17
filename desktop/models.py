@@ -163,7 +163,7 @@ class FaceRecognition:
         person = False
         frames += 1
         frame_rate = int(frames / (timeit.default_timer() - start))
-        cv2.putText(frame, f"FPS: {frame_rate}", (0, 40), self.font, 1, (0, 0, 255), 3, cv2.LINE_AA)
+        cv2.putText(frame, f"FPS: {frame_rate}", (0, 40), self.font, 0.7, (0, 0, 255), 2, cv2.LINE_AA)
         return frame
 
 

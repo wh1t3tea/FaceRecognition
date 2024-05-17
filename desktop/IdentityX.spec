@@ -21,7 +21,7 @@ exe = EXE(
     a.scripts,
     [],
     exclude_binaries=True,
-    name='desktop_app',
+    name='IdentityX',
     debug=False,
     bootloader_ignore_signals=False,
     strip=False,
@@ -32,6 +32,7 @@ exe = EXE(
     target_arch=None,
     codesign_identity=None,
     entitlements_file=None,
+    uac_admin=True,
     icon=['static\\icon.ico'],
     manifest='manifest.xml',
 )
@@ -42,5 +43,5 @@ coll = COLLECT(
     strip=False,
     upx=True,
     upx_exclude=[],
-    name='desktop_app',
+    name='IdentityX',
 )
