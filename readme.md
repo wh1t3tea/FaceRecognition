@@ -1,4 +1,4 @@
-# Real-time Face Recognition with a Lightweight Model
+# Real-time Face Recognition with a Light-weight Model
 
 This repository implements a real-time face recognition system using a lightweight model based on GhostFaceNetV2 architecture. The model achieves state-of-the-art performance and is designed to run efficiently on CPU, making it suitable for local deployment without the need for a GPU.
 
