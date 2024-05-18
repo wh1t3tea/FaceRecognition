@@ -169,6 +169,19 @@ Once the application is running, you can perform the following actions:
 - This project is developed for educational purposes and can be further refined and expanded for specific needs.
 - When using this code in your projects, please provide references to the original research papers and datasets.
 
+## EXE
+To build desktop app we used PyInstaller and Inno Setup:
+- **Build**: you can specify any arguments you need in this bash comand:
+
+    ```bash
+    pyinstaller --add-data "weights:weights" --noconsole --icon=static/icon.ico --manifest=manifest.xml --name IdentityX --uac-admin  desktop_app.py
+    ```
+- **Create installer**: To create installer we used Inno Setup:
+
+      1. Download [Inno Setup](https://jrsoftware.org/isinfo.php)
+      2. Write your setup script or use Wizard for user-friendly UI
+  Our setup script will be available soon.
+
 
 
 
