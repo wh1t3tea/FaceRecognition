@@ -2,15 +2,12 @@ import os
 import cv2
 import numpy as np
 import torch.cuda
-from dotenv import dotenv_values, set_key
 from insightface.app import FaceAnalysis
-import onnxruntime
 import timeit
 from ellzaf_ml.models import GhostFaceNetsV2
 from insightface.utils.face_align import norm_crop
 from torchvision import transforms as tfs
 import torch.nn.functional as F
-from insightface.data import get_image
 
 np.int = int
 

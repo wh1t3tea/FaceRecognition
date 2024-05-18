@@ -1,14 +1,13 @@
 import os.path
-import sys
 from PyQt5.QtGui import QIcon
 import torch.cuda
-from PyQt5.QtWidgets import QApplication, QWidget, QLabel, QVBoxLayout, QPushButton, QComboBox, QFileDialog, \
-    QMessageBox, QHBoxLayout, QGridLayout
+from PyQt5.QtWidgets import QApplication, QWidget, QLabel, QPushButton, QComboBox, QFileDialog, \
+    QMessageBox, QGridLayout
 from PyQt5.QtGui import QPixmap, QImage
 from PyQt5.QtCore import Qt, QThread, pyqtSignal
 import cv2
 import numpy as np
-from dotenv import load_dotenv, find_dotenv, dotenv_values, set_key
+from dotenv import load_dotenv, find_dotenv
 from insightface.app import FaceAnalysis
 import onnxruntime
 from models import FaceRecognition, FaceSet
