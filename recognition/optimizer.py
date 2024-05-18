@@ -1,5 +1,4 @@
 from torch import optim
-import torch
 from torch.optim import lr_scheduler
 
 

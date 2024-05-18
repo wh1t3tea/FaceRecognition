@@ -4,9 +4,8 @@ __pycache__/
 recognition/checkpoints/*
 desktop/faces/*
 desktop/person_base/*
-desktop/embeddgins
+desktop/embeddings/*
 *.env
-desktop/dist/
-desktop/build/
+desktop/dist/*
+desktop/build/*
 .spec
-desktop/embeddgins

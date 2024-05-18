@@ -1,5 +1,6 @@
 import logging
 
+
 def setup_train_logging(log_file):
     logger = logging.getLogger("Trainer:")
     logger.setLevel(logging.INFO)
@@ -10,6 +11,7 @@ def setup_train_logging(log_file):
     handler.setFormatter(formatter)
     logger.addHandler(handler)
     return logger
+
 
 def setup_callbacks_logging(log_file):
     logger = logging.getLogger("Callback:")

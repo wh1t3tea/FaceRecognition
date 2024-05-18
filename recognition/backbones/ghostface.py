@@ -88,7 +88,7 @@ class ModifiedGDC(nn.Module):
         x = self.bn1(x)
         x = self.dropout(x)
         x = self.conv(x)
-        x = x.view(x.size(0), -1)  # Flatten
+        x = x.view(x.size(0), -1)
         x = self.bn2(x)
         x = self.linear(x)
         return x

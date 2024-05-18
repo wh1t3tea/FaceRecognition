@@ -1,12 +1,11 @@
-from .eval_dataset import EvalDataset
+from eval_dataset import EvalDataset
 import torch
 import torch.nn.functional as F
-from .id_rate import IdRate
-from torch.utils.data import Dataset, DataLoader
+from id_rate import IdRate
+from torch.utils.data import  DataLoader
 import pandas as pd
 from torch.nn.functional import cosine_similarity
 import os.path as osp
-import os
 
 
 class Evaluate:

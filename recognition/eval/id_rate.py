@@ -1,6 +1,6 @@
 import torch
 from torchvision import transforms as T
-from torch.nn.functional import cosine_similarity, normalize
+from torch.nn.functional import cosine_similarity
 import os
 from collections import defaultdict
 from PIL import Image

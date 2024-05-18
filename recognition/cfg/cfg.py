@@ -1,13 +1,13 @@
 import json
-import os.path as osp
-import os
 import argparse
+
 
 def load_cfg(cfg):
     cfg = cfg.config
     with open(cfg) as cfg_json:
         cfg = json.load(cfg_json)
         return cfg
+
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="load your config")

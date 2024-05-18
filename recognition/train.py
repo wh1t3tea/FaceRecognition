@@ -1,12 +1,8 @@
 import torch
-import logger
 import argparse
-from dataset import get_dataloader, get_mx_dataloader
+from dataset import get_dataloader
 from eval.lfw_benchmark import Evaluate
-from pytorch_metric_learning.losses import ArcFaceLoss
 from backbones.iresnet import get_iresnet
-from torch import optim
-from torch.optim import lr_scheduler
 from ellzaf_ml.models import GhostFaceNetsV2
 from cfg.cfg import load_cfg
 from callbacks import EarlyStop
@@ -153,7 +149,8 @@ def train(arg):
                                                fpr=test_metrics["fpr"])
             accuracy = np.round(accuracy["accuracy"], 4)
             logger.info(f"Epoch {epoch} / {epochs} results: train_loss: {np.round(epoch_train_loss, 8)}" +
-                        f" | current LR: {current_lr if show_lr else 0} | lfw-accuracy: {accuracy} | threshold: {np.round(thresh, 5)}")
+                        f" | current LR: {current_lr if show_lr else 0} | lfw-accuracy: {accuracy}" +
+                        f" | threshold: {np.round(thresh, 5)}")
 
             if early_stop:
                 early_stop(accuracy, epoch)

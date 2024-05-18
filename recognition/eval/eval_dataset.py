@@ -1,7 +1,4 @@
-from torch.utils.data import Dataset, DataLoader
-from torchvision.datasets import ImageFolder
-import torchvision.transforms as T
-import os
+from torch.utils.data import Dataset
 import os.path as osp
 import torchvision.transforms as T
 from PIL import Image

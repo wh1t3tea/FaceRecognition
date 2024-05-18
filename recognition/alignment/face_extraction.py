@@ -2,12 +2,7 @@ import numpy as np
 import cv2
 from torch import nn
 import torch
-import insightface
 from insightface.app import FaceAnalysis
-from insightface.data import get_image as ins_get_image
-from torchvision import transforms as T
-import PIL
-from PIL import Image
 from face_align import norm_crop
 
 
