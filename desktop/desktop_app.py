@@ -1,4 +1,5 @@
 import os.path
+
 from PyQt5.QtGui import QIcon
 import torch.cuda
 from PyQt5.QtWidgets import QApplication, QWidget, QLabel, QPushButton, QComboBox, QFileDialog, \
@@ -8,33 +9,57 @@ from PyQt5.QtCore import Qt, QThread, pyqtSignal
 import cv2
 import numpy as np
 from dotenv import load_dotenv, find_dotenv
-from insightface.app import FaceAnalysis
-import onnxruntime
 from models import FaceRecognition, FaceSet
 import stylesheet.button as s
+from auth_window import AuthWindow
 
 load_dotenv(find_dotenv())
 
+model_rec = "./weights/ghostface4.pth"
+thresh = 0.3
+
 
 class VideoThread(QThread):
+    """
+    Class for processing video stream from camera.
+    """
     change_pixmap_signal = pyqtSignal(np.ndarray)
 
     def __init__(self, camera_index):
+        """
+        Initialize the VideoThread object.
+
+        Args:
+            camera_index (int): Index of the camera.
+        """
         super().__init__()
         self.camera_index = camera_index
 
     def run(self):
+        """
+        Method to start the thread.
+        """
         cap = cv2.VideoCapture(self.camera_index)
         while True:
-            frame = window.recognition_thread.stream(cap)
-            self.change_pixmap_signal.emit(frame)
+            ret, frame = cap.read()
+            if ret:
+                self.change_pixmap_signal.emit(frame)
             if cv2.waitKey(1) & 0xFF == ord('q'):
                 break
         cap.release()
 
 
 class MainWindow(QWidget):
+    """
+    Class for the main application window.
+    """
     def __init__(self, face_cfg):
+        """
+        Initialize the MainWindow object.
+
+        Args:
+            face_cfg (list): Configuration of the face recognition model.
+        """
         super().__init__()
         self.recognition_thread = None
         self.setWindowTitle("IdentityX")
@@ -176,11 +201,29 @@ class MainWindow(QWidget):
         return QPixmap.fromImage(p)
 
 
-if __name__ == '__main__':
-    app = QApplication([])
-    model_rec = "./weights/ghostface4.pth"
-    thresh = 0.3
-    cfg = [model_rec, thresh]
-    window = MainWindow(cfg)
+def on_auth_success(config):
+    """
+    Function to handle successful authentication.
+
+    Args:
+        config (list): Configuration.
+    """
+    global window
+
+    window = MainWindow(config)
     window.show()
+
+    auth.close()
+
+
+if __name__ == '__main__':
+    cfg = [model_rec, thresh]
+
+    app = QApplication([])
+
+    auth = AuthWindow()
+    auth.show()
+
+    auth.is_valid.connect(lambda: on_auth_success(cfg))
+
     app.exec_()
