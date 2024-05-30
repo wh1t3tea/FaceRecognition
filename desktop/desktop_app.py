@@ -41,9 +41,8 @@ class VideoThread(QThread):
         """
         cap = cv2.VideoCapture(self.camera_index)
         while True:
-            ret, frame = cap.read()
-            if ret:
-                self.change_pixmap_signal.emit(frame)
+            frame = window.recognition_thread.stream(cap)
+            self.change_pixmap_signal.emit(frame)
             if cv2.waitKey(1) & 0xFF == ord('q'):
                 break
         cap.release()
