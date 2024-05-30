@@ -3,6 +3,17 @@ from torch.optim import lr_scheduler
 
 
 def get_pretrain_param_groups(model, skip_list=(), skip_keywords=()):
+    """
+    Separate parameters for optimization into those with decay and those without.
+
+    Args:
+        model (torch.nn.Module): The model for which parameters are separated.
+        skip_list (tuple, optional): A tuple of parameter names to be excluded from weight decay.
+        skip_keywords (tuple, optional): A tuple of keywords indicating parameters to be excluded from weight decay.
+
+    Returns:
+        list: List of dictionaries containing parameters with and without weight decay.
+    """
     has_decay = []
     no_decay = []
     has_decay_name = []
@@ -23,6 +34,16 @@ def get_pretrain_param_groups(model, skip_list=(), skip_keywords=()):
 
 
 def check_keywords_in_name(name, keywords=()):
+    """
+    Check if any of the keywords are present in the parameter name.
+
+    Args:
+        name (str): Name of the parameter.
+        keywords (tuple): Keywords to search for in the parameter name.
+
+    Returns:
+        bool: True if any keyword is found in the name, False otherwise.
+    """
     isin = False
     for keyword in keywords:
         if keyword in name:
@@ -32,10 +53,17 @@ def check_keywords_in_name(name, keywords=()):
 
 def get_optimizer(entities, cfg):
     """
+    Get optimizer and scheduler based on the configuration.
 
-    :param entities:
-    :param cfg:
-    :return:
+    Args:
+        entities (list): List of entities to optimize.
+        cfg (dict): Configuration for optimizer and scheduler.
+
+    Returns:
+        tuple: Optimizer and scheduler objects.
+
+    Raises:
+        Exception: If unexpected optimizer is encountered.
     """
     params_bn = []
     params = []

@@ -9,12 +9,16 @@ import os.path as osp
 
 
 class Evaluate:
-    def __init__(self, pairs_dir, tar_far_dir, fpr):
-        """
-        pairs_data_path: {str} path to the image folder.
-        pairs_annot_path: {str} path to the pairs list.
-        """
+    """
+    Class for evaluating face recognition models.
 
+    Args:
+        pairs_dir (str): Directory containing pairs data.
+        tar_far_dir (str): Directory containing TAR FAR data.
+        fpr (float): False positive rate for TAR FAR evaluation.
+    """
+
+    def __init__(self, pairs_dir, tar_far_dir, fpr):
         self.fpr = fpr
 
         pairs_annot_path = osp.join(pairs_dir, "lfw_pair.txt")
@@ -42,26 +46,41 @@ class Evaluate:
                                      drop_last=True)
 
     def get_dataset(self):
+        """
+        Get evaluation dataset.
+
+        Returns:
+            EvalDataset: Evaluation dataset.
+        """
         pairs = pd.read_csv(self.pairs_cfg['labels'], sep=' ', names=['First_image', 'Second_image', 'Issame'])
         data = EvalDataset(self.pairs_cfg['data'], pairs, self.pairs_cfg['root'])
         return data
 
-    def compute_threshold(self,
-                          model):
+    def compute_threshold(self, model):
+        """
+        Compute threshold for evaluation.
+
+        Args:
+            model: Face recognition model.
+
+        Returns:
+            float: Computed threshold.
+        """
         id_rate = IdRate(*self.id_rate_cfg)
         metric, threshold = id_rate.id_rate(model, self.fpr)
         return threshold
 
-    def accuracy(self,
-                 model,
-                 metrics,
-                 fpr) -> tuple[dict, float]:
-
+    def accuracy(self, model, metrics, fpr):
         """
-        threshold: {float} computed with TPR@FPR=0.05 metric.
-        size: {int} dissipate in quarters.
-        metric: {str} any of {"accuracy", "f1-score", "precision", "recall"}
-        fpr: {float} acceptable error miss verification rate.
+        Compute accuracy metrics for evaluation.
+
+        Args:
+            model: Face recognition model.
+            metrics (list): List of metrics to compute.
+            fpr (float): False positive rate for evaluation.
+
+        Returns:
+            tuple: Dictionary containing accuracy metrics and computed threshold.
         """
         threshold = 1 - self.compute_threshold(model)
         print(threshold)

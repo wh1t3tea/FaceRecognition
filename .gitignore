@@ -1,4 +1,5 @@
 *.log
+*.database
 **/test.py
 __pycache__/
 recognition/checkpoints/*

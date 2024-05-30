@@ -30,7 +30,7 @@ class Authorization:
             try:
                 query = select(SubscriptionOrm.app_key).where(
                     SubscriptionOrm.app_key == self.api_key,
-                    SubscriptionOrm.subscription_plan != "expired",
+                    SubscriptionOrm.subscription_plan.lower() != "expired",
                 )
                 result = session.execute(query).all()
 

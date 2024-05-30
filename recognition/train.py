@@ -14,6 +14,15 @@ from torch import nn
 
 
 def train(arg):
+    """
+    Train function to train the face recognition model.
+
+    Args:
+        arg (str): Path to the configuration file (.json).
+
+    Raises:
+        Exception: If unexpected loss or backbone is encountered.
+    """
     # Load configuration file
     cfg = load_cfg(arg)
 

@@ -5,6 +5,17 @@ from logger import setup_callbacks_logging
 
 
 class EarlyStop:
+    """
+    Implements early stopping during training based on validation accuracy.
+
+    Args:
+        model (torch.nn.Module): The model being trained.
+        arcface (torch.nn.Module): ArcFace module.
+        optim (torch.optim.Optimizer): The optimizer used for training.
+        path (str): Directory where checkpoints will be saved.
+        log_path (str): Path to the log file.
+        patience (int, optional): Number of epochs to wait for improvement before stopping. Defaults to 7.
+    """
     def __init__(self,
                  model,
                  arcface,
@@ -24,6 +35,13 @@ class EarlyStop:
         self.logger = setup_callbacks_logging(log_path)
 
     def __call__(self, accuracy_score, epoch):
+        """
+        Check whether to perform early stopping based on the current accuracy score.
+
+        Args:
+            accuracy_score (float): Current accuracy score.
+            epoch (int): Current epoch number.
+        """
         if accuracy_score > self.best_score:
             self.logger.info(f"EarlyStop: lfw-pairs Accuracy increased {self.best_score} -> {accuracy_score}")
             self.best_score = accuracy_score
@@ -37,10 +55,22 @@ class EarlyStop:
             self.counter += 1
 
     def current_params(self):
+        """
+        Get the current parameters of the model, arcface, and optimizer.
+
+        Returns:
+            list: List of tuples containing the parameter names and their corresponding state dictionaries.
+        """
         params = [(key, value.state_dict()) for key, value in self.use_params.items()]
         return params
 
     def save_checkpoint(self, epoch):
+        """
+        Save a checkpoint of the model, arcface, and optimizer parameters.
+
+        Args:
+            epoch (int): Current epoch number.
+        """
         checkpoint_name = f"checkpoint_epch{epoch}"
         checkpoint_path = osp.join(self.path, checkpoint_name)
         print(checkpoint_path)

@@ -17,6 +17,18 @@ def get_dataloader(root_dir,
                    batch_size,
                    num_workers=4,
                    shuffle=True):
+    """
+    Get PyTorch DataLoader for the given dataset in the root directory.
+
+    Args:
+        root_dir (str): Root directory of the dataset.
+        batch_size (int): Batch size.
+        num_workers (int): Number of worker processes for data loading.
+        shuffle (bool): Whether to shuffle the data.
+
+    Returns:
+        DataLoader: PyTorch DataLoader.
+    """
     transforms = T.Compose([
         T.ToTensor(),
         T.RandomHorizontalFlip(),
@@ -73,6 +85,18 @@ def get_mx_dataloader(
         batch_size,
         num_workers=2,
 ) -> Iterable:
+    """
+    Get DataLoader for the dataset in MXNet RecordIO or Image Folder format.
+
+    Args:
+        root_dir (str): Root directory of the dataset.
+        batch_size (int): Batch size.
+        num_workers (int): Number of worker processes for data loading.
+
+    Returns:
+        DataLoader: DataLoader for the dataset.
+
+    """
     rec = os.path.join(root_dir, 'train.rec')
     idx = os.path.join(root_dir, 'train.idx')
     train_set = None
