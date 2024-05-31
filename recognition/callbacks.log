@@ -1,2 +1,0 @@
-callbacks 2024-03-25 02:01:17,037 INFO EarlyStop: lfw-pairs Accuracy increased 0 -> 10
-callbacks 2024-03-25 02:01:17,037 INFO EarlyStop: counter out of patience: 8/7. Early stop training on epoch: 9
